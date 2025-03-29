@@ -1,0 +1,11 @@
+---
+title: "Bibliography"
+format: pdf
+bibliography: references.bib
+nocite: |
+  @mice2011, @bekus
+---
+
+[@mice2011]
+
+## References
