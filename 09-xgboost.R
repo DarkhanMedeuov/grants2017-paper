@@ -64,23 +64,3 @@ xgb_res_log_loss <- xgb_last_wf_log_loss %>%
                                      roc_auc, sens, spec),
                 control = keep_pred)
 
-
-
-# neural
-#nnet_spec <-
-#  mlp() %>%
-#  set_mode("classification") %>% 
-#  set_engine("keras", verbose = 0)
-
-
-#nnet_wflow <-
-#  workflow() %>%
-#  add_recipe(full) %>% 
-#  add_model(nnet_spec)
-
-#nnet_res <- nnet_wflow %>% 
-#  fit_resamples(resamples = grants_folds, 
-#                metrics = metric_set(precision, f_meas, 
-#                                     accuracy, kap,
-#                                     roc_auc, sens, spec),
-#                control = keep_pred)

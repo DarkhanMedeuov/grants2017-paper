@@ -1,0 +1,77 @@
+\begin{table}
+\centering
+\begin{tabular}[t]{lcccc}
+\toprule
+  & Full OLS & Clustered SE & Random Effects & Tobit\\
+\midrule
+(Intercept) & \num{22.656}*** & \num{22.656}*** & \num{22.397}*** & \\
+ & (\num{0.267}) & (\num{0.349}) & (\num{0.365}) & \\
+sexFemale & \num{-0.057} & \num{-0.057} & \num{-0.057} & \num{-0.057}\\
+ & (\num{0.142}) & (\num{0.122}) & (\num{0.144}) & (\num{0.141})\\
+regionАстана & \num{0.015} & \num{0.015} &  & \num{0.015}\\
+ & (\num{0.177}) & (\num{0.235}) &  & (\num{0.177})\\
+regionШымкент & \num{-1.338}*** & \num{-1.338} &  & \num{-1.338}***\\
+ & (\num{0.311}) & (\num{0.855}) &  & (\num{0.310})\\
+regionOther & \num{-0.361}+ & \num{-0.361} &  & \num{-0.361}+\\
+ & (\num{0.210}) & (\num{0.257}) &  & (\num{0.209})\\
+domainAgriculture & \num{0.237} & \num{0.237}* &  & \num{0.237}\\
+ & (\num{0.230}) & (\num{0.118}) &  & (\num{0.229})\\
+domainScience & \num{0.175} & \num{0.175} &  & \num{0.175}\\
+ & (\num{0.248}) & (\num{0.242}) &  & (\num{0.247})\\
+domainLife & \num{-0.449}+ & \num{-0.449}** &  & \num{-0.449}+\\
+ & (\num{0.236}) & (\num{0.174}) &  & (\num{0.235})\\
+domainSecurity & \num{0.394} & \num{0.394}** &  & \num{0.394}\\
+ & (\num{0.444}) & (\num{0.138}) &  & (\num{0.443})\\
+domainNatural\_rm & \num{0.752}*** & \num{0.752}*** &  & \num{0.752}***\\
+ & (\num{0.198}) & (\num{0.113}) &  & (\num{0.197})\\
+domainEnergy & \num{0.172} & \num{0.172} &  & \num{0.172}\\
+ & (\num{0.289}) & (\num{0.123}) &  & (\num{0.289})\\
+rintsYes & \num{0.723}*** & \num{0.723}*** & \num{0.731}*** & \num{0.723}***\\
+ & (\num{0.193}) & (\num{0.186}) & (\num{0.200}) & (\num{0.193})\\
+scopusYes & \num{0.028} & \num{0.028} & \num{0.026} & \num{0.028}\\
+ & (\num{0.170}) & (\num{0.305}) & (\num{0.172}) & (\num{0.170})\\
+hirsh & \num{0.262}*** & \num{0.262}*** & \num{0.261}*** & \num{0.262}***\\
+ & (\num{0.029}) & (\num{0.036}) & (\num{0.030}) & (\num{0.029})\\
+delistedYes & \num{-0.645}*** & \num{-0.645} & \num{-0.661}*** & \num{-0.645}***\\
+ & (\num{0.177}) & (\num{0.405}) & (\num{0.179}) & (\num{0.176})\\
+win\_2014Yes & \num{1.597}*** & \num{1.597}*** & \num{1.595}*** & \num{1.597}***\\
+ & (\num{0.186}) & (\num{0.146}) & (\num{0.192}) & (\num{0.186})\\
+degreeDoctor & \num{0.430}** & \num{0.430}** & \num{0.451}** & \num{0.430}**\\
+ & (\num{0.148}) & (\num{0.166}) & (\num{0.152}) & (\num{0.148})\\
+degreePhD & \num{0.884}*** & \num{0.884}*** & \num{0.917}*** & \num{0.884}***\\
+ & (\num{0.223}) & (\num{0.226}) & (\num{0.227}) & (\num{0.222})\\
+inst\_capWorks with & \num{0.759}*** & \num{0.759}* & \num{0.788}*** & \num{0.759}***\\
+ & (\num{0.173}) & (\num{0.306}) & (\num{0.175}) & (\num{0.172})\\
+inst\_capMember & \num{-0.681} & \num{-0.681} & \num{-0.509} & \num{-0.681}\\
+ & (\num{0.526}) & (\num{0.550}) & (\num{0.539}) & (\num{0.525})\\
+inst\_cap(Missing) & \num{-1.729}** & \num{-1.729}+ & \num{-1.675}** & \num{-1.729}**\\
+ & (\num{0.634}) & (\num{1.042}) & (\num{0.638}) & (\num{0.632})\\
+org\_prestigeNational & \num{-0.043} & \num{-0.043} & \num{-0.005} & \num{-0.043}\\
+ & (\num{0.242}) & (\num{0.319}) & (\num{0.243}) & (\num{0.241})\\
+org\_prestigeInternational & \num{1.056} & \num{1.056} & \num{1.175}+ & \num{1.056}\\
+ & (\num{0.669}) & (\num{0.818}) & (\num{0.679}) & (\num{0.667})\\
+org\_prestigeOther & \num{0.830}*** & \num{0.830}** & \num{0.832}*** & \num{0.830}***\\
+ & (\num{0.197}) & (\num{0.308}) & (\num{0.197}) & (\num{0.196})\\
+(Intercept) × 1 &  &  &  & \num{22.656}***\\
+ &  &  &  & (\num{0.266})\\
+(Intercept) × 2 &  &  &  & \num{1.484}***\\
+ &  &  &  & (\num{0.011})\\
+SD (Observations) &  &  & \num{3.805} & \\
+SD (Intercept pi\_id) &  &  & \num{2.255} & \\
+SD (Intercept domain) &  &  & \num{0.337} & \\
+SD (Intercept region) &  &  & \num{0.573} & \\
+\midrule
+Num.Obs. & \num{4488} & \num{4488} & \num{4488} & \num{4488}\\
+R2 & \num{0.107} &  &  & \\
+R2 Adj. & \num{0.103} &  &  & \\
+R2 Marg. &  &  & \num{0.086} & \\
+R2 Cond. &  &  & \num{0.339} & \\
+AIC & \num{26104.0} & \num{34982.0} & \num{26101.2} & \num{26104.0}\\
+BIC & \num{26264.3} & \num{63592.5} & \num{26223.0} & \num{26264.3}\\
+ICC &  &  & \num{0.3} & \\
+Log.Lik. & \num{-13027.015} &  &  & \\
+F & \num{23.327} &  &  & \\
+RMSE & \num{4.41} &  & \num{3.30} & \num{3.15}\\
+\bottomrule
+\end{tabular}
+\end{table}

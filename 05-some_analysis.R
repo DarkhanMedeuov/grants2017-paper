@@ -1,10 +1,16 @@
+library(tidyverse)
 library(modelr)
 library(modelsummary)
 library(RColorBrewer)
 library(cowplot)
 library(ggpubr)
+library(lmtest)
+library(sandwich)
+library(VGAM)
+library(MASS)
+library(lme4)
 grants_def <- 
-  read_rds(file = "data/processed/grants_def.rds")
+  read_rds(file = "out/data/replication_dataset_negotiating_academic_funding.rds")
 
 models_score <-
   list(
@@ -18,15 +24,15 @@ models_score <-
       formula(score ~
                 sex + region + domain
               ),
-    `demo+domain+fake+qual` = 
+    `demo+domain+delisted+qual` = 
       formula(score ~
-                domain + sex + region + 
-                fake + rints + scopus + hirsh 
+                sex + region + domain +
+                rints + scopus + hirsh + delisted
               ),
     full = 
       formula(score ~ 
-                 domain + sex + region + # demographics
-                 rints + scopus + hirsh + fake + # quality indicators
+                 sex + region + domain + # demographics
+                 rints + scopus + hirsh + delisted + # quality indicators
                  win_2014 + degree + # institutional memory aka Mathew effect
                  inst_cap + org_prestige # institutional capital)
                )
@@ -38,68 +44,34 @@ models_score <-
            lm(data = grants_def, 
               formula = formula)
          })
+models_score$`full, robust SE` <-
+  coeftest(models_score$full, 
+           vcov = vcovCL, 
+           type = "HC1",
+           cluster = ~domain)
+  
 modelsummary(models_score, 
              output = "out/tables/tab4_model_score_all.tex", 
              estimate  = "{estimate}{stars}",
              statistic = "({std.error})", 
              coef_rename = coef_rename)
 modelsummary(models_score, estimate  = "{estimate}{stars}", 
-             statistic = "{std.error} ({p.value})")
+             output = "out/tables/tab4_model_score_all.html",
+             statistic = "{std.error}", 
+             coef_rename = coef_rename)
 
-plot(models_score$full)
-
-ggplot(models_score$full, aes(sample = .resid)) +
-  geom_qq() +
-  geom_qq_line()
-plot(models_score$full$fitted.values, 
-     models_score$full$residuals)
-
-library(lmtest)
-resettest(models_score$full)
-bptest(models_score$full)
-
-grants_def$score %>% mean()
-grants_def$score %>% var()
-
-tibble(x = rpois(n = 4488, lambda = 24)) %>% 
-  mutate(x_mean = mean(x)) %>%
-  ggplot(aes(x = x)) + 
-  geom_histogram(color = "grey", bins = 30) + 
-  geom_vline(xintercept = 24)
-mean(models_score$full$residuals)
-
-final_formula <- 
-  formula(score ~ 
-  domain + sex + region + # demographics
-  rints + scopus + hirsh + fake + # quality indicators
-  win_2014 + degree + # institutional memory aka Mathew effect
-  inst_cap + org_prestige # institutional capital)
-  )
-
-
-pois_fit1 <- glm(data = grants_def, final_formula, family = "poisson")
-summary(pois_fit1)
-library(lme4)
-grants_def
-library(MASS)
-lmodel <- glm(final_formula, data = grants_def, family = quasipoisson)
-tidy(lmodel, exponentiate = FALSE) %>%
-  mutate(stars = 
-           case_when(p.value < 0.001 ~ "***", 
-                     p.value >= 0.001 & p.value < 0.01 ~ "**", 
-                     p.value >= 0.01 & p.value < 0.05 ~ "*", 
-                     p.value >= 0.05 ~ "",
-                     .default = as.character(p.value))) %>% View()
-
-
-grants_def[1283, ] %>% View()
-
-## Смотрим на данные с точки зрения доменов
+# QQ plot show that theoretical and empirical quantiles diverge in the upper
+# part of the range
+plot(models_score$full, 2)
+write_rds(models_score$full, file = "out/data/models_score.rds")
+## Let's take a look at data by domains
 my_model <-
   function(df) {
-    lm(score ~ hirsh + win_2014 + rints + 
-         scopus + fake + sex + 
-         region + degree + inst_cap + org_prestige,
+    lm(score ~ 
+         sex + region + 
+         rints + scopus + hirsh + delisted +
+         win_2014 + degree + 
+         inst_cap + org_prestige,
        data = df)
   }
 
@@ -118,24 +90,26 @@ grants_out <-
   mutate(data = map2(data, model, add_predictions)) %>% 
   mutate(data = map2(data, model, add_residuals))
 
-# Теперь сделаем таблицы регрессий
+# Turning them into regression tables
 
 score_models <- 
   grants_out %>%
-  filter(domain != "Security") %>%
+  filter(domain != "Security") %>% # Domain 'security' doesn't fare well
   pull(model, name = domain)
 
 modelsummary(score_models, 
              output = "out/tables/table2.tex",
+             vcov = "HC1", # robust se
              estimate  = "{estimate}{stars}",
              statistic = "({std.error})",
              coef_rename = coef_rename)
 modelsummary(score_models, 
-             output = "out/tables/table2.html",
+             vcov = "HC1", # robust se
              estimate  = "{estimate}{stars}",
              statistic = "({std.error})",
              coef_rename = coef_rename)
 
+# just to see how the coef varies across domains
 score_models2 <- 
   grants_out %>%
   filter(domain != "Security") %>%
@@ -146,6 +120,70 @@ modelsummary(score_models2,
              statistic = "{std.error}",
              coef_omit = "Intercept", 
              coef_rename = coef_rename)
+
+
+## Testing model assumptions and auxiliary hypotheses
+
+score_robust_errors <-
+  coeftest(models_score$full, 
+         vcov = vcovCL, 
+         type = "HC1",
+         cluster = ~domain)
+
+score_random_effects <- 
+  lmer(score ~ 
+         sex + 
+         rints + scopus + hirsh + delisted + 
+         win_2014 + degree + 
+         inst_cap + org_prestige + (1|pi_id) + (1|region) + (1|domain), 
+       data = grants_def)
+
+final_formula <- formula(
+  score ~ 
+    sex + region + domain + 
+    rints + scopus + hirsh + delisted + 
+    win_2014 + degree + 
+    inst_cap + org_prestige)
+
+score_tobit_reg <- 
+  vglm(final_formula, tobit(Upper = 36), data = grants_def)
+
+# collecting
+score_auxiliary <- 
+  list(
+    `Full OLS` = models_score$full,
+    `Clustered SE` = score_robust_errors, 
+    `Random Effects` = score_random_effects,
+    `Tobit` = score_tobit_reg
+  )
+
+write_rds(score_auxiliary, file = "out/data/score_auxiliary.rds")
+modelsummary(score_auxiliary,
+             output = "out/tables/score_check_tables.tex",
+             estimate  = "{estimate}{stars}",
+             statistic = "({std.error})")
+
+## Treating score as an ordinal variable
+### Using existing values as levels
+score_polr_reg <- 
+  polr(final_formula, data = grants_def %>% 
+         mutate(score = as.ordered(score)))
+score_polr_reg2 <-
+  polr(final_formula, data = grants_def %>%
+         mutate(score = cut(score, breaks = seq(0, 40, by = 5))) %>% 
+         mutate(score = fct_collapse(score, 
+                                     `30+` = c("(30,35]", "(35,40]"))))
+
+score_auxiliary2 <-
+  list(`POLR` = score_polr_reg, 
+       `POLR, intervals` = score_polr_reg2)
+write_rds(score_auxiliary2, file = "out/data/score_auxiliary2.rds")
+modelsummary(score_auxiliary2, 
+             estimate  = "{estimate}{stars}",
+             statistic = "({std.error})", 
+             coef_omit = "\\|")
+
+
 
 (strange_plot3 <- 
   grants_out %>%

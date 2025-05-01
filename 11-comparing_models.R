@@ -3,6 +3,7 @@ log_metrics <-
   collect_metrics(summarise = TRUE) %>%
   mutate(model = "Logistic Regression") # add the name of the model to every row
 
+
 rf_metrics <- 
   as_workflow_set(rf1 = rf_res1, 
                   rf2 = rf_res2) %>% 
@@ -14,7 +15,6 @@ xgb_metrics <-
                   xgb2 = xgb_res_log_loss) %>%
   collect_metrics(summarise = TRUE) %>%
   mutate(model = "XGBoost")
-
 
 
 # create dataframe with all models
@@ -41,8 +41,6 @@ all_models <-
     labs(title = "f_meas") +
     theme(legend.position = "none", plot.title = element_text(hjust = 0.5)))
 
-
-
 all_pred <- 
   all_models %>%
   collect_predictions()
@@ -67,10 +65,9 @@ all_models %>% collect_metrics() %>%
                              "XGBoost: Log Loss", 
                              "XGBoost: ROC")) + 
     labs(color = NULL)) 
-ggsave(filename = "out/pic/fig3_all_roc_curves.tiff",
-       device = "tiff",
-       roc_curves, 
-       dpi = 300)
+ggsave(filename = "out/pic/S3_all_roc_curves.pdf",
+       device = "pdf",
+       roc_curves)
 # All models
 labels <- c("Logistic Full", 
             "Logistic: Score X Domain", 
@@ -116,10 +113,9 @@ precision_plot <-
   labs(y = NULL, x = "Precision")
 
 (panel1 <- (sens_plot + spec_plot)/precision_plot)
-ggsave(filename = "out/pic/fig4_model_metrics1.tiff", 
-       device = "tiff",
-       panel1,
-       dpi = 300)
+ggsave(filename = "out/pic/S4_model_metrics1.pdf", 
+       device = "pdf",
+       panel1)
 
 (f_meas_plot <-
     autoplot(all_models, 

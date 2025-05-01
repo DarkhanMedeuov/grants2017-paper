@@ -1,3 +1,10 @@
+library(tidyverse)
+library(modelsummary)
+library(lmtest)
+library(sandwich)
+library(lme4)
+grants_def <- 
+  read_rds(file = "out/data/replication_dataset_negotiating_academic_funding.rds")
 models_win <-
   list(
     `merit` = 
@@ -8,12 +15,12 @@ models_win <-
     `merit+memory+demo` = 
       formula(
         win ~
-          score + hirsh + rints + scopus + fake
+          score + hirsh + rints + scopus + delisted
       ),
     `full-inst_cap` = 
       formula(
         win ~
-          score + hirsh + rints + scopus + fake + # quality indicators
+          score + hirsh + rints + scopus + delisted + # quality indicators
           win_2014 + degree + # institutional memory aka Mathew effect
           domain + sex + region + # demographics
           org_prestige + pr_rank
@@ -21,7 +28,7 @@ models_win <-
     `full` = 
       formula(
         win ~ 
-          score + hirsh + rints + scopus + fake + # quality indicators
+          score + hirsh + rints + scopus + delisted + # quality indicators
           win_2014 + degree + # institutional memory aka Mathew effect
           domain + sex + region + # demographics
           org_prestige + pr_rank + 
@@ -30,7 +37,7 @@ models_win <-
     `full, scoreXsex` =
       formula(
         win ~ 
-          score + hirsh + rints + scopus + fake + # quality indicators
+          score + hirsh + rints + scopus + delisted + # quality indicators
           win_2014 + degree + # institutional memory aka Mathew effect
           domain + sex + region + # demographics
           org_prestige + pr_rank + 
@@ -39,7 +46,7 @@ models_win <-
     `full, scoreXdomain` = 
       formula(
         win ~ 
-          score + hirsh + rints + scopus + fake + # quality indicators
+          score + hirsh + rints + scopus + delisted + # quality indicators
           win_2014 + degree + # institutional memory aka Mathew effect
           domain + sex + region + # demographics
           org_prestige + pr_rank + 
@@ -48,29 +55,13 @@ models_win <-
     `full, hirshXsex` =
       formula(
         win ~ 
-          score + hirsh + rints + scopus + fake + 
+          score + hirsh + rints + scopus + delisted + 
           win_2014 + degree + 
           domain + sex + region + 
           org_prestige + pr_rank + 
           inst_cap + hirsh:sex
       )
     )
-
-
-lm(cbind(degreePhD, degreeDoctor) ~ if_else(hirsh > 1, 1, 0), data = tt) %>%
-  summary()
-lm(hirsh ~ degreePhD + degreeDoctor, data = tt) %>%
-  summary()
-lm(cbind(domainAgriculture, domainScience, domainLife, domainSecurity, 
-         domainNatural_rm, domainEnergy) ~ if_else(hirsh > 1, 1, 0), 
-   data = tt) %>% summary()
-
-lm(cbind(inst_capMember) ~ if_else(hirsh > 1, 1, 0), 
-   data = tt) %>% summary()
-lm(inst_capMember ~ 1, 
-   data = tt) %>% summary()
-
-grants_def %>% group_by(inst_cap) %>% summarise(mean = mean(hirsh))
 
 models_win_fit <-
   lapply(models_win, 
@@ -79,9 +70,7 @@ models_win_fit <-
               formula = formula, 
               family = "binomial")
          })
-summary(models_win_fit$full)
-write_rds(x = models_win_fit, 
-          file = "/Users/dmedeuov/Documents/courses/soc203_final_ksl/data/models_win.rds")
+write_rds(models_win_fit$full, "out/data/models_win_full.rds")
 modelsummary(models_win_fit[c(1:5, 7)], 
              output = "out/tables/tab5_model_win_all.html", 
              estimate  = "{estimate}({std.error}){stars}",
@@ -93,46 +82,55 @@ modelsummary(models_win_fit[c(1:5, 7)],
              gof_omit = "^(?!.*Num.Obs.|AIC)",
              estimate  = "{estimate}{stars}",
              statistic = "({std.error})", 
-             coef_rename = coef_rename)
-?modelsummary
-
-modelsummary(models_win_fit[1:5], 
-             estimate  = "{estimate}({std.error}){stars}",
-             statistic = NULL, 
+             vcov  = "HC0",
              coef_rename = coef_rename)
 
 
+tt <- coeftest(models_win_fit$full, 
+         vcov. = vcovCL(models_win_fit$full, 
+                        cluster = grants_def$pi_id, type = "HC0"))
+ttt <- coeftest(models_win_fit$full, 
+               vcov. = vcovCL(models_win_fit$full, 
+                              cluster = ~pi_id + domain, type = "HC0"))
+
+win_random_effects <- 
+  glmer(win ~ 
+         score + hirsh + rints + scopus + delisted +
+          win_2014 + degree + 
+          sex + 
+          org_prestige + pr_rank + 
+          inst_cap + (1|region) + (1|domain), 
+       data = grants_def, family = "binomial")
 
 
-(anova_fit1 <-
-  anova(models_win_fit$`full-inst_cap`, 
-        models_win_fit$full))
-anova(models_win_fit$`full-inst_cap`)
-anova(models_win_fit$`full, scoreXdomain`, test = "Rao")
-
-anova_fit2 <-
-  anova(models_win_fit$full,
-      models_win_fit$`full, scoreXsex`)
-
-
-library(sandwich)
-library("lmtest")
-fit <- models_win_fit$full
-grants_def %>% 
-  count(name, sort = TRUE)
-tt <- coeftest(fit, 
-         vcov. = vcovCL(fit, cluster = grants_def$name, type = "HC0"))
-modelsummary(list(clustered_logit = tt, 
-                  vanila_logit = fit), 
+modelsummary(list(`Robust SE` = models_win_fit$full,
+                  `Clustered (PI)` = tt,
+                  `Clustered (PI + Domain)` = ttt, 
+                  `RE(Region + Domain)`= win_random_effects), 
+             output = "out/tables/S4_table.docx",
              estimate  = "{estimate}{stars}",
-             statistic = "({std.error})")
-summary(fit)
+             statistic = "({std.error})", 
+             gof_omit = "R2 Marg.|R2 Cond.|BIC|ICC|Log.Lik.|F|RMSE")
 
-# Здесь будем анализировать финальную модель, но к ней еще надо будет прийти. 
+modelsummary(list(`Robust SE` = models_win_fit$full,
+                  `Clustered (PI)` = tt,
+                  `Clustered (PI + Domain)` = ttt, 
+                  `RE(Region + Domain)`= win_random_effects),
+             estimate  = "{estimate}{stars}",
+             statistic = "({std.error})",
+             gof_omit = "R2 Marg.|R2 Cond.|BIC|ICC|Log.Lik.|F|RMSE")
+
+
+# Taking the full model
+
+full_formula <- 
+  formula(win ~ score + sex + win_2014 + rints + 
+            scopus + hirsh + delisted +
+            region + degree + inst_cap + pr_rank + org_prestige)
 my_model <-
   function(df) {
     glm(win ~ score + sex + win_2014 + rints + 
-          scopus + hirsh + fake +
+          scopus + hirsh + delisted +
           region + degree + inst_cap + pr_rank + org_prestige,
        data = df,
        family = "binomial")
@@ -142,50 +140,30 @@ data <-
   grants_def %>% 
   group_by(domain) %>% 
   nest()
+
 data <- 
   data %>% 
   mutate(model = map(data, my_model))
+
 win_models <- 
   data %>%
   filter(domain != "Security") %>%
   pull(model, name = domain)
-modelsummary(win_models, 
-             output = "out/tables/tab5_model_win_all_by_domains.docx",
-             estimate  = "{estimate}({std.error}){stars}",
-             statistic = NULL, 
-             coef_rename = coef_rename)
+
 modelsummary(win_models, 
              output = "out/tables/tab6_model_win_all_by_domains.tex",
              estimate  = "{estimate}{stars}",
              statistic = "({std.error})", 
+             vcov  = "HC0",
+             gof_omit = "BIC|Log.Lik|RMSE",
              coef_rename = coef_rename)
 modelsummary(win_models,
              estimate  = "{estimate}{stars}",
              statistic = "{std.error}", 
+             vcov  = "HC0",
+             gof_omit = "BIC|Log.Lik|RMSE",
              coef_rename = coef_rename)
 
-grants_def %>% 
-  group_by(domain, member) %>% 
-  summarise(n = n(), 
-            win_rate = mean(win == "Yes"))
-
-grants_def %>% 
-  group_by(domain, sex) %>% 
-  summarise(n = n(), 
-            win_rate = mean(win == "Yes"))
-
-grants_def %>% 
-  group_by(domain) %>% 
-  summarise(male_rate = mean(sex == "Male"), 
-            female_rate = mean(sex == "Female"), 
-            difference = male_rate - female_rate)
-
-grants_def %>% 
-  group_by(domain, sex) %>%
-  summarise(mean_score = mean(score), 
-            mean_hirsh = mean(hirsh))
-
-summary(data$model[[1]])
 data %>% 
   mutate(tidy_models = map(model, broom::tidy)) %>% 
   unnest(tidy_models, .drop = TRUE) %>% 
@@ -197,7 +175,7 @@ data %>%
   geom_pointrange(show.legend = FALSE, size = 0.2) +
   coord_flip() + 
   facet_wrap(~domain) + 
-  labs(title = "Modelling win var by domain") + 
+  labs(title = "Modelling winning by domain") + 
   theme(text = element_text(size = 8))
 ggsave("out/pic/win_models_by_domain.png", width = 10, height = 6)
 

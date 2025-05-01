@@ -221,7 +221,6 @@ p2 <-
 p1+p2
 ggsave(file = "out/pic/illustration.png", width = 10, height = 6.18)
 
-tidy(last_fit_log) %>% View()
 
 
 

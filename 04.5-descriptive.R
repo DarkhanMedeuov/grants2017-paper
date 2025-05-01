@@ -1,7 +1,7 @@
 library(tidyverse)
 library(modelsummary)
 grants_def <- 
-  read_rds(file = "data/processed/grants_def.rds")
+  read_rds(file = "out/data/replication_dataset_negotiating_academic_funding.rds")
 tab1 <-
   grants_def %>% 
   group_by(domain) %>% 
@@ -53,7 +53,7 @@ tab3 <-
   summarise(prev_success_rate = mean(win_2014 == "Yes"), 
             Rints_rate = mean(rints == "Yes"), 
             Scopus_rate = mean(scopus == "Yes"), 
-            Fake_rate = mean(fake == "Yes"), 
+            Delisted_rate = mean(delisted == "Yes"), 
             Female_prop = mean(sex == "Female"), 
             hirsh0 = mean(hirsh == 0), 
             hirsh1 = mean(hirsh == 1), 
@@ -64,13 +64,8 @@ tab3 <-
             phd_rate = mean(degree == "PhD")) %>% 
   pivot_longer(-domain, names_to = "metric") %>% 
   pivot_wider(values_from = value, names_from = domain)
-#datasummary_df(tab3, output = "out/tables/tab3.docx")
-datasummary_df(tab3, output = "out/tables/tab3.tex")
+
+datasummary_df(tab3, output = "out/tables/S1_table.docx")
 
 
-grants_def %>% 
-  ggplot(aes(x = region, fill = degree)) + 
-  geom_bar(position = "fill", color = "grey") + 
-  scale_x_discrete(labels = c("Almaty", "Astana", "Shymkent", "Other")) +
-  labs(fill = NULL, x = NULL, y = NULL)
 rm(fig1, tab1, tab2, tab3)

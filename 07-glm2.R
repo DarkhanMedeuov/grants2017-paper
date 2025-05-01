@@ -1,7 +1,10 @@
+library(tidyverse)
 library(tidymodels)
 library(patchwork)
 library(ggrepel)
 tidymodels_prefer()
+grants_def <- 
+  read_rds(file = "out/data/replication_dataset_negotiating_academic_funding.rds")
 rm(list = ls()[!(ls() %>% grepl("grants_def", .))])
 
 grants_def <-
@@ -23,20 +26,20 @@ baseline_rec <- # the most simple one
 
 meritocracy_rec <-
   recipe(win ~ 
-           score + hirsh + rints + scopus + fake, # quality indicators
+           score + hirsh + rints + scopus + delisted, # quality indicators
          data = grants_train) %>% 
   step_dummy(all_nominal_predictors())
 
 meritocracy_memory_rec <-
   recipe(win ~
-           score + hirsh + rints + scopus + fake + # quality indicators
+           score + hirsh + rints + scopus + delisted + # quality indicators
            win_2014 + degree, # institutional memory aka Mathew effect
          data = grants_train) %>% 
   step_dummy(all_nominal_predictors())
 
 meritocracy_memory_demo_rec <-
   recipe(win ~
-           score + hirsh + rints + scopus + fake + # quality indicators
+           score + hirsh + rints + scopus + delisted + # quality indicators
            win_2014 + degree + # institutional memory aka Mathew effect
            domain + sex + region, # demographics
          data = grants_train) %>% 
@@ -44,7 +47,7 @@ meritocracy_memory_demo_rec <-
 
 full_no_inst_rec <-
   recipe(win ~
-           score + hirsh + rints + scopus + fake + # quality indicators
+           score + hirsh + rints + scopus + delisted + # quality indicators
            win_2014 + degree + # institutional memory aka Mathew effect
            domain + sex + region + # demographics
            org_prestige + pr_rank,
@@ -53,7 +56,7 @@ full_no_inst_rec <-
 
 full_rec <-
   recipe(win ~ 
-           score + hirsh + rints + scopus + fake + # quality indicators
+           score + hirsh + rints + scopus + delisted + # quality indicators
            win_2014 + degree + # institutional memory aka Mathew effect
            domain + sex + region + # demographics
            org_prestige + pr_rank + 
@@ -132,4 +135,6 @@ log_pred <-
                                     "Merit Only", "Merit, Matthew, and Demo", 
                                     "Merit and Memo"))
   )
+
+
 

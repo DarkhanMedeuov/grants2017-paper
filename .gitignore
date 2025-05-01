@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+00-merge.R
+01-start.R
+02-connections.R
+03-insitutions.R
+04-workplaces.R
+06.5-logit_decomp.R
